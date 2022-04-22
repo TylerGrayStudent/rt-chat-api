@@ -1,3 +1,4 @@
+import { Req } from '@nestjs/common';
 import {
   MessageBody,
   SubscribeMessage,
@@ -5,6 +6,7 @@ import {
   WebSocketServer,
   WsResponse,
 } from '@nestjs/websockets';
+import { Request } from 'express';
 import { Server } from 'http';
 import { from, map, Observable } from 'rxjs';
 
@@ -17,7 +19,12 @@ export class ChatGateway {
   @WebSocketServer()
   server: Server;
 
-  @SubscribeMessage('connect')
+  async handleConnection(@Req() request: Request): Promise<void> {
+    console.log('Client connected');
+    this.server.emit('identity', 'connected');
+  }
+
+  @SubscribeMessage('connection')
   onConnect() {
     console.log('Client connected');
   }
