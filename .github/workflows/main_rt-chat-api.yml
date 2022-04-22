@@ -49,9 +49,6 @@ jobs:
           creds: ${{secrets.AZURE_CREDENTIALS}}
           enable-AzPSSession: true
 
-      - run: |
-          Get-AzVM -ResourceGroupName "ResourceGroup11"
-
       - name: Download artifact from build job
         uses: actions/download-artifact@v2
         with:
