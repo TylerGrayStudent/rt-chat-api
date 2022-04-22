@@ -49,6 +49,13 @@ jobs:
           creds: ${{secrets.AZURE_CREDENTIALS}}
           enable-AzPSSession: true
 
+      - name: Run Azure PowerShell script
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            Get-AzVM -ResourceGroupName "East"
+          azPSVersion: 'latest'
+
       - name: Download artifact from build job
         uses: actions/download-artifact@v2
         with:
@@ -58,7 +65,7 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'RealTi'
+          app-name: 'RealTimeChatAPI'
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
           package: release.zip
