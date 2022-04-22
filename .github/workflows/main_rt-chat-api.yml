@@ -44,28 +44,28 @@ jobs:
 
     steps:
       - name: 'Az CLI login'
-          uses: azure/login@v1
-          with:
-            client-id: ${{ secrets.AZURE_CLIENT_ID }}
-            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  
-    - name: 'Run az commands'
-      run: |
-        az account show
-        az group list
-        pwd 
-          
-    - name: Download artifact from build job
-      uses: actions/download-artifact@v2
+      uses: azure/login@v1
       with:
-        name: node-app
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  
+      - name: 'Run az commands'
+        run: |
+          az account show
+          az group list
+          pwd 
 
-     - name: 'Deploy to Azure Web App'
-       id: deploy-to-webapp
-       uses: azure/webapps-deploy@v2
-       with:
-         app-name: 'RealTimeChatApi'
-         slot-name: 'Production'
-         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-         package: release.zip
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v2
+        with:
+          name: node-app
+
+      - name: 'Deploy to Azure Web App'
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'RealTi'
+          slot-name: 'Production'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+          package: release.zip
