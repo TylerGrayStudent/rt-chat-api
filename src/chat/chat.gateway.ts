@@ -8,12 +8,19 @@ import {
 } from '@nestjs/websockets';
 import { NestGateway } from '@nestjs/websockets/interfaces/nest-gateway.interface';
 import { Server } from 'http';
+import { BehaviorSubject } from 'rxjs';
 import { Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 
 interface User {
   id: string;
-  username: string;
+  username?: string;
+}
+
+interface UserChangeEvent {
+  type: 'add' | 'remove';
+  user: User;
+  users: User[];
 }
 
 @WebSocketGateway({
@@ -25,37 +32,49 @@ export class ChatGateway implements NestGateway {
   @WebSocketServer()
   server: Server;
 
-  public users: User[] = [];
+  private _users = new BehaviorSubject<User[]>([]);
 
-  constructor(private chat: ChatService) {
-    console.log('ChatGateway');
-  }
+  constructor(private chat: ChatService) {}
 
   afterInit(server: any) {
     this.chat.getChats().subscribe((chats) => {
-      server.emit('message', chats);
+      server.emit('message', chats[0]);
+    });
+    this._users.subscribe((users) => {
+      server.emit('users', users);
+    });
+  }
+
+  addUser(user: User) {
+    if (this._users.value.find((x) => x.username === user.username)) {
+      console.log('User already exists');
+      // throw new HttpException(`User ${user.username} already exists`, 409);
+    }
+    this._users.next([...this._users.getValue(), user]);
+    this.chat.addChat({
+      message: `${user.username} joined the chat`,
+      user: 'System',
+    });
+  }
+
+  removeUser(id: string) {
+    const username = this._users.value.find((x) => x.id === id)?.username;
+    this._users.next(this._users.getValue().filter((x) => x.id !== id));
+    this.chat.addChat({
+      message: `${username} left the chat`,
+      user: 'System',
     });
   }
 
   handleConnection(socket: Socket) {
-    console.log(`Client connected: ${socket.id}`);
+    console.log('Client connected');
+    const name = socket.handshake.auth.username;
+    this.addUser({ id: socket.id, username: name });
   }
 
-  handleDisconnect() {
+  handleDisconnect(socket: Socket) {
+    this.removeUser(socket.id);
     console.log('Client disconnected');
-  }
-
-  @Bind(MessageBody(), ConnectedSocket())
-  @SubscribeMessage('connection')
-  onConnect(@MessageBody() name: string, @ConnectedSocket() socket: Socket) {
-    if (this.users.find((x) => x.username === name)) {
-      socket.emit('error', 'Username already taken');
-      return;
-    }
-    console.log(`User connected: ${name}`);
-    console.log(socket.client);
-    this.users.push({ id: socket.id, username: name });
-    this.chat.addChat({ message: `${name} joined the chat`, user: socket.id });
   }
 
   @Bind(MessageBody(), ConnectedSocket())
@@ -64,7 +83,12 @@ export class ChatGateway implements NestGateway {
     @MessageBody() message: string,
     @ConnectedSocket() socket: Socket,
   ) {
-    const user = this.users.find((x) => x.id === socket.id);
+    const user = this._users.value.find((x) => x.id === socket.id);
     this.chat.addChat({ message: message, user: user.username });
+  }
+
+  @SubscribeMessage('events')
+  onEvent(@ConnectedSocket() socket: Socket) {
+    socket.emit('events', ['users', 'message']);
   }
 }
