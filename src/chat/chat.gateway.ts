@@ -37,9 +37,12 @@ export class ChatGateway implements NestGateway {
     });
   }
 
-  handleConnection(socket: any) {
+  handleConnection(socket: Socket) {
     console.log(`Client connected: ${socket.id}`);
-    console.log(socket);
+  }
+
+  handleDisconnect() {
+    console.log('Client disconnected');
   }
 
   @Bind(MessageBody(), ConnectedSocket())
