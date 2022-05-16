@@ -68,6 +68,7 @@ export class ChatGateway implements NestGateway {
 
   handleConnection(socket: Socket) {
     console.log('Client connected');
+    console.log(socket.handshake.auth);
     const name = socket.handshake.auth.username;
     this.addUser({ id: socket.id, username: name });
   }
@@ -91,4 +92,21 @@ export class ChatGateway implements NestGateway {
   onEvent(@ConnectedSocket() socket: Socket) {
     socket.emit('events', ['users', 'message']);
   }
+
+  @Bind(MessageBody(), ConnectedSocket())
+  @SubscribeMessage('call')
+  async call(
+    @MessageBody() username: string,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    console.log('onCall', username);
+    const user = this._users.value.find((x) => x.username === username);
+    //socket.broadcast.to(user.id).emit('call', socket.id);
+  }
+
+  // @Bind(ConnectedSocket())
+  // @SubscribeMessage('receiveCall')
+  // async receiveCall(@ConnectedSocket() socket: Socket) {
+  //   socket.broadcast.to(user.id).emit('call', socket.id);
+  // }
 }
